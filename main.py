@@ -1,19 +1,21 @@
-from typing import Union
-import uvicorn
-
-from fastapi import FastAPI
-from pydantic import BaseModel
+import os
+import pickle
+from typing import Annotated
 
 import numpy as np
-import pickle
+import uvicorn
+from fastapi import FastAPI, Form, Request
+from fastapi.responses import HTMLResponse
+from fastapi.templating import Jinja2Templates
+from pydantic import BaseModel
+
+PORT = 9000
+HOST = "127.0.0.1"
 
 app = FastAPI()
-
-
-class Item(BaseModel):
-    name: str
-    price: float
-    is_offer: Union[bool, None] = None
+model = pickle.load(open("model.pkl", "rb"))
+BASE_DIR = os.path.dirname(__file__)
+templates = Jinja2Templates(directory=os.path.join(BASE_DIR, "templates"))
 
 
 @app.get("/")
@@ -21,28 +23,9 @@ def read_root():
     return {"Hello": "World"}
 
 
-@app.get("/items/{item_id}")
-def read_item(item_id: int, q: Union[str, None] = None):
-    return {"item_id": item_id, "q": q}
-
-
-@app.put("/items/{item_id}")
-def update_item(item_id: int, item: Item):
-    pass
-    return {"item_name": item.name, "item_id": item_id}
-
-
-import os
-from fastapi import Request
-from fastapi.responses import HTMLResponse
-from fastapi.staticfiles import StaticFiles
-from fastapi.templating import Jinja2Templates
-
-# app = FastAPI()
-
-# app.mount("/templates", StaticFiles(directory="../templates"), name="templates")
-BASE_DIR = os.path.dirname(__file__)
-templates = Jinja2Templates(directory=os.path.join(BASE_DIR, "templates"))
+class Item(BaseModel):
+    like: int
+    forward: int
 
 
 @app.get("/predict", response_class=HTMLResponse)
@@ -50,10 +33,24 @@ async def show(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
 
 
-@app.get("/predict", response_class=HTMLResponse)
-async def read_item(request: Request):
-    return templates.TemplateResponse("index.html", {"request": request})
+@app.post("/predict", response_class=HTMLResponse)
+async def predict_num(
+    request: Request, like: Annotated[int, Form()], forward: Annotated[int, Form()]
+):
+    features = [like, forward]
+    label = [np.array(features)]
+
+    prediction = model.predict(label)
+
+    output = round(prediction[0], 2)
+
+    content = {
+        "request": request,
+        "prediction_text": f"浏览量 $ {output}",
+        "predict_url": f"http://{HOST}:{PORT}/predict",
+    }
+    return templates.TemplateResponse("index.html", content)
 
 
 if __name__ == "__main__":
-    uvicorn.run("main:app", host="127.0.0.1", port=8000, reload=True)
+    uvicorn.run("main:app", host=HOST, port=PORT, reload=True)

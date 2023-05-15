@@ -11,9 +11,9 @@
 	<h1>浏览量预测</h1>
 
      <!-- Main Input For Receiving Query to our ML -->
-    <form action="http://127.0.0.1:8000/predict" method="post">
-        <input type="text" name="点赞数" placeholder="点赞数" required="required" />
-		<input type="text" name="转发数" placeholder="转发数" required="required" />
+    <form action="{{ predict_url }}" method="post">
+        <input type="text" name="like" placeholder="点赞数" required="required" />
+		<input type="text" name="forward" placeholder="转发数" required="required" />
         <button type="submit" class="btn btn-primary btn-block btn-large">预测浏览量</button>
     </form>
 
