@@ -30,12 +30,6 @@ jobs:
       - name: Build backend and push
         uses: docker/build-push-action@v3
         with:
-          context: backend
+          context: .
           push: true
           tags: ${{ env.DOCKERHUB_USERNAME }}/backend:${{ steps.vars.outputs.sha_short }}
-      - name: Build frontend and push
-        uses: docker/build-push-action@v3
-        with:
-          context: frontend
-          push: true
-          tags: ${{ env.DOCKERHUB_USERNAME }}/frontend:${{ steps.vars.outputs.sha_short }}
